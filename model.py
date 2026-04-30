@@ -122,3 +122,11 @@ class TinyGPT(nn.Module):
         return logits, new_kvs
 
 
+def build_model(seed: int = SEED) -> TinyGPT:
+    """Deterministic constructor. Same seed -> same weights, every time."""
+    torch.manual_seed(seed)
+    model = TinyGPT()
+    model.eval()
+    for p in model.parameters():
+        p.requires_grad_(False)
+    return model
