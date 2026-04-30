@@ -1,0 +1,8 @@
+# .dockerignore — keep these out of the workdir copy
+venv/
+__pycache__/
+*.pyc
+.git/
+.pytest_cache/
+verdict.json
+.deps_installed
