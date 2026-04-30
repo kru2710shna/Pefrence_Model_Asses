@@ -17,6 +17,7 @@ Action protocol (kept deliberately small):
 """
 from __future__ import annotations
 
+import os
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -25,6 +26,15 @@ from typing import Any
 from .agent_prompt import build_initial_prompt
 from .reward import Reward, RewardMode, format_reward, parse_verdict
 from .sandbox import ExecResult, Sandbox
+
+# Env vars forwarded from the host into the sandbox container. Keep this
+# list short and explicit — we never want to leak arbitrary host env into
+# the candidate's runtime.
+FORWARDED_ENV_VARS = ("SPEED_RATIO",)
+
+# How long judge.py is allowed to run inside the container. Mac-Docker
+# adds substantial overhead vs. native Linux; 600s is generous.
+JUDGE_TIMEOUT_S = 600
 
 
 @dataclass
@@ -80,8 +90,14 @@ class Environment:
                 return StepResult(f"write_file error: {e}", None, False)
 
         if kind == "read_file":
+            # Block direct reads of judge-only files even though they're
+            # in the workdir for now. (Proper fix is moving them out of
+            # the bind-mount entirely; this is the cheap interim guard.)
+            path = action.get("path", "")
+            if "prompts_hidden" in path:
+                return StepResult("read_file error: file not accessible", None, False)
             try:
-                content = self.sandbox.read_file(action["path"])
+                content = self.sandbox.read_file(path)
                 return StepResult(content, None, False)
             except Exception as e:
                 return StepResult(f"read_file error: {e}", None, False)
@@ -108,9 +124,22 @@ class Environment:
     # ---------- internals ----------
 
     def _run_judge_and_terminate(self) -> StepResult:
-        res = self.sandbox.exec(["python", "judge.py"], timeout_s=180)
+        # Forward an explicit, short list of env vars from host → container.
+        # SPEED_RATIO lets devs on slow Docker hosts (e.g. Mac) relax the
+        # speed gate without changing the default for production.
+        env_vars = {
+            k: os.environ[k]
+            for k in FORWARDED_ENV_VARS
+            if k in os.environ
+        }
+        res = self.sandbox.exec(
+            ["python", "judge.py"],
+            timeout_s=JUDGE_TIMEOUT_S,
+            env=env_vars,
+        )
         if res.timed_out:
-            return self._terminate_with_failure("judge timed out (180s)")
+            return self._terminate_with_failure(
+                f"judge timed out ({JUDGE_TIMEOUT_S}s)")
         try:
             verdict = parse_verdict(res.stdout)
         except ValueError as e:

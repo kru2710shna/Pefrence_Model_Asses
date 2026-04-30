@@ -44,7 +44,7 @@ class Sandbox:
     """Per-episode sandbox. One Sandbox = one episode = one workdir."""
 
     IMAGE = "preference-env:latest"
-    DEFAULT_TIMEOUT_S = 120
+    DEFAULT_TIMEOUT_S = 620
     MEMORY_LIMIT = "2g"
     CPU_LIMIT = "1.0"
 
@@ -94,10 +94,12 @@ class Sandbox:
 
     # ---------- exec ----------
 
-    def exec(self, cmd: list[str], timeout_s: int = DEFAULT_TIMEOUT_S) -> ExecResult:
+    def exec(self, cmd: list[str], timeout_s: int = DEFAULT_TIMEOUT_S,
+        env: dict | None = None) -> ExecResult:
         """Run `cmd` inside the sandbox container, with workdir bind-mounted."""
         if self.workdir is None:
             raise RuntimeError("Sandbox.exec called before reset()")
+        print(f"[debug] sandbox.exec env={env}", flush=True)
 
         docker_cmd = [
             "docker", "run",
@@ -110,9 +112,12 @@ class Sandbox:
             "-v", f"{self.workdir}:/workspace:rw",
             "-w", "/workspace",
             "--user", "1000:1000",
-            self.IMAGE,
-            *cmd,
         ]
+        # Forward explicit env vars into the container.
+        for k, v in (env or {}).items():
+            docker_cmd.extend(["-e", f"{k}={v}"])
+        docker_cmd.append(self.IMAGE)
+        docker_cmd.extend(cmd)
 
         try:
             proc = subprocess.run(

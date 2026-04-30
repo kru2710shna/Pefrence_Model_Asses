@@ -6,7 +6,7 @@ import time
 import traceback
 import tracemalloc
 from pathlib import Path
-
+import os
 import torch
 
 from model import build_model
@@ -17,7 +17,7 @@ HIDDEN       = HERE / "prompts_hidden.json"
 CANDIDATE    = HERE / "generate.py"
 VERDICT_PATH = HERE / "verdict.json"
 
-SPEED_RATIO_REQUIRED = 2.0
+SPEED_RATIO_REQUIRED = float(os.environ.get("SPEED_RATIO", "2.0"))
 N_TIMING_RUNS        = 3
 MEMORY_LINEAR_TOL    = 1.6
 
