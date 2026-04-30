@@ -1,0 +1,23 @@
+{
+  "pass": true,
+  "score": 1.0,
+  "score_continuous": 1.0,
+  "gates": {
+    "existence": {
+      "pass": true
+    },
+    "correctness": {
+      "pass": true
+    },
+    "speed": {
+      "pass": true,
+      "details": "naive=0.699s candidate=0.131s speedup=5.33x",
+      "speedup": 5.325
+    },
+    "memory": {
+      "pass": true,
+      "details": "peak(64)=8012B peak(128)=7910B ratio=0.99",
+      "linearity": 1.0
+    }
+  }
+}
