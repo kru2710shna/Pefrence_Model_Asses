@@ -65,6 +65,25 @@ def gate_correctness(model, candidate_fn, hidden) -> tuple[bool, str]:
     return True, ""
 
 
+def time_fn(fn, model, ids, max_tokens, runs=N_TIMING_RUNS) -> float:
+    timings = []
+    for _ in range(runs):
+        t0 = time.perf_counter()
+        fn(model, ids, max_tokens)
+        timings.append(time.perf_counter() - t0)
+    timings.sort()
+    return timings[len(timings) // 2]
+
+
+def gate_speed(model, candidate_fn, hidden) -> tuple[bool, str, float]:
+    spec = hidden["speed_test"]
+    ids = torch.tensor([spec["prompt"]], dtype=torch.long)
+    t_naive = time_fn(generate_naive, model, ids, spec["max_tokens"])
+    t_cand  = time_fn(candidate_fn,  model, ids, spec["max_tokens"])
+    speedup = t_naive / t_cand if t_cand > 0 else float("inf")
+    ok = speedup >= SPEED_RATIO_REQUIRED
+    msg = f"naive={t_naive:.3f}s candidate={t_cand:.3f}s speedup={speedup:.2f}x"
+    return ok, msg, speedup
 
 
 def peak_memory(fn, model, ids, max_tokens) -> int:
