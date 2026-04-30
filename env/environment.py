@@ -7,7 +7,6 @@ Lifecycle:
     obs = env.step(action)        # agent took an action, get next obs
     ...
     reward, done, info = env.finish()  # judge runs, episode ends
-    env.close()
 
 Action protocol (kept deliberately small):
     {"type": "write_file", "path": "generate.py", "content": "..."}
@@ -46,7 +45,7 @@ class StepResult:
 
 
 class Environment:
-    MAX_ACTIONS_PER_EPISODE = 50      # hard cap — agents that loop forever fail
+    MAX_ACTIONS_PER_EPISODE = 50      
 
     def __init__(
         self,

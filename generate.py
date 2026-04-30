@@ -1,5 +1,4 @@
 """
-TODO: Implement KV-cached greedy generation.
 
 Requirements:
 - Expose a function `generate(model, input_ids, max_tokens) -> torch.LongTensor`

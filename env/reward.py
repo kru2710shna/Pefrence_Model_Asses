@@ -37,7 +37,6 @@ def format_reward(verdict: dict, mode: RewardMode = "binary") -> Reward:
 
     if mode == "shaped":
         # Partial credit ladder: each gate passed is worth a fixed amount.
-        # This avoids the trap where the shaped reward exceeds the binary
         # reward — a passing run is always 1.0 in both modes.
         if verdict.get("pass"):
             return Reward(1.0, True, None, verdict.get("gates", {}))
